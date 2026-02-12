@@ -123,3 +123,143 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Note: Trigger must be created on auth.users in Supabase dashboard or via migration if possible
 -- CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- ROW LEVEL SECURITY
+-- ------------------
+
+-- Helper function to check if user is admin
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'admin'
+  );
+$$ LANGUAGE sql SECURITY DEFINER;
+
+-- 1. profiles
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public profiles are viewable by everyone."
+  ON public.profiles FOR SELECT
+  USING ( true );
+
+CREATE POLICY "Users can insert their own profile."
+  ON public.profiles FOR INSERT
+  WITH CHECK ( auth.uid() = id );
+
+CREATE POLICY "Users can update own profile."
+  ON public.profiles FOR UPDATE
+  USING ( auth.uid() = id );
+
+CREATE POLICY "Admins can update any profile."
+  ON public.profiles FOR UPDATE
+  USING ( public.is_admin() );
+
+-- 2. products
+ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Products are viewable by everyone."
+  ON public.products FOR SELECT
+  USING ( true );
+
+CREATE POLICY "Admins can insert products."
+  ON public.products FOR INSERT
+  WITH CHECK ( public.is_admin() );
+
+CREATE POLICY "Admins can update products."
+  ON public.products FOR UPDATE
+  USING ( public.is_admin() );
+
+CREATE POLICY "Admins can delete products."
+  ON public.products FOR DELETE
+  USING ( public.is_admin() );
+
+-- 3. affiliate_links
+ALTER TABLE public.affiliate_links ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Affiliates can view own links."
+  ON public.affiliate_links FOR SELECT
+  USING ( auth.uid() = affiliate_id );
+
+CREATE POLICY "Admins can view all links."
+  ON public.affiliate_links FOR SELECT
+  USING ( public.is_admin() );
+
+CREATE POLICY "Affiliates can create links."
+  ON public.affiliate_links FOR INSERT
+  WITH CHECK ( auth.uid() = affiliate_id );
+
+CREATE POLICY "Affiliates can delete own links."
+  ON public.affiliate_links FOR DELETE
+  USING ( auth.uid() = affiliate_id );
+
+-- 4. affiliate_clicks
+ALTER TABLE public.affiliate_clicks ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Admins view all clicks."
+  ON public.affiliate_clicks FOR SELECT
+  USING ( public.is_admin() );
+
+CREATE POLICY "Affiliates view clicks for their links."
+  ON public.affiliate_clicks FOR SELECT
+  USING (
+    affiliate_link_id IN (
+      SELECT id FROM public.affiliate_links WHERE affiliate_id = auth.uid()
+    )
+  );
+
+-- Insert usually happens via Edge Function (service role) or anon if public tracking
+CREATE POLICY "Public can insert clicks (tracking)."
+  ON public.affiliate_clicks FOR INSERT
+  WITH CHECK ( true );
+
+-- 5. conversions
+ALTER TABLE public.conversions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Admins view all conversions."
+  ON public.conversions FOR SELECT
+  USING ( public.is_admin() );
+
+CREATE POLICY "Affiliates view own conversions."
+  ON public.conversions FOR SELECT
+  USING (
+    affiliate_link_id IN (
+      SELECT id FROM public.affiliate_links WHERE affiliate_id = auth.uid()
+    )
+  );
+
+-- Insert/Update primarily by system/admin
+CREATE POLICY "Admins can insert/update conversions."
+  ON public.conversions FOR ALL
+  USING ( public.is_admin() );
+
+-- 6. affiliate_wallets
+ALTER TABLE public.affiliate_wallets ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Affiliates view own wallet."
+  ON public.affiliate_wallets FOR SELECT
+  USING ( auth.uid() = affiliate_id );
+
+CREATE POLICY "Admins view all wallets."
+  ON public.affiliate_wallets FOR SELECT
+  USING ( public.is_admin() );
+
+-- 7. withdrawal_requests
+ALTER TABLE public.withdrawal_requests ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Affiliates view own requests."
+  ON public.withdrawal_requests FOR SELECT
+  USING ( auth.uid() = affiliate_id );
+
+CREATE POLICY "Admins view all requests."
+  ON public.withdrawal_requests FOR SELECT
+  USING ( public.is_admin() );
+
+CREATE POLICY "Affiliates can create requests."
+  ON public.withdrawal_requests FOR INSERT
+  WITH CHECK ( auth.uid() = affiliate_id );
+
+CREATE POLICY "Admins can update requests."
+  ON public.withdrawal_requests FOR UPDATE
+  USING ( public.is_admin() );
+
