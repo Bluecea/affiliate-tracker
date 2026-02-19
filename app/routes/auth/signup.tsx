@@ -6,6 +6,9 @@ import { Link, useNavigate } from 'react-router'
 import { supabase } from '../../lib/supabase'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
+import { AuthLayout } from '../../components/auth/AuthLayout'
+import { GoogleSignInButton } from '../../components/auth/GoogleSignInButton'
+import { FormDivider } from '../../components/auth/FormDivider'
 
 const signupSchema = z
   .object({
@@ -43,27 +46,17 @@ export default function Signup() {
         email: data.email,
         password: data.password,
         options: {
-          data: {
-            full_name: data.fullName,
-          },
+          data: { full_name: data.fullName },
         },
       })
 
-      if (error) {
-        throw error
-      }
-
-      // If email confirmation is disabled, we can redirect directly.
-      // Or show a message "Check your email"
-      // For this MVP, assuming auto-confirm or redirect handled by Supabase or just redirect to dashboard/login
-      // If session is established immediately (auto confirm off or enabled but "Enable email confirmations" is off on supabase)
+      if (error) throw error
 
       const { data: sessionData } = await supabase.auth.getSession()
       if (sessionData.session) {
         navigate('/dashboard')
       } else {
-        // Email confirmation required case
-        navigate('/') // or show a success message
+        navigate('/')
         alert('Please check your email to confirm your account.')
       }
     } catch (err: any) {
@@ -74,118 +67,143 @@ export default function Signup() {
   }
 
   return (
-    <div className='min-h-screen flex items-center justify-center bg-slate-50 px-4 py-12 sm:px-6 lg:px-8'>
-      <div className='w-full max-w-md space-y-8 bg-white p-8 rounded-xl shadow-lg border border-slate-100'>
-        <div className='text-center'>
-          <h2 className='mt-6 text-3xl font-bold tracking-tight text-slate-900'>
+    <AuthLayout>
+      <div className='w-full max-w-sm'>
+        {/* Heading */}
+        <div className='mb-8'>
+          <h2 className='text-3xl font-bold text-slate-900 dark:text-slate-50 mb-1'>
             Create an account
           </h2>
-          <p className='mt-2 text-sm text-slate-600'>
-            Join the affiliate program today
+          <p className='text-sm text-slate-500 dark:text-slate-400'>
+            Join the Bluecea Affiliate Network today.
           </p>
         </div>
 
-        <form className='mt-8 space-y-6' onSubmit={handleSubmit(onSubmit)}>
-          <div className='space-y-4 rounded-md shadow-sm'>
-            <div>
-              <label htmlFor='fullName' className='sr-only'>
-                Full Name
-              </label>
-              <Input
-                id='fullName'
-                type='text'
-                placeholder='Full Name'
-                className={errors.fullName ? 'border-red-500' : ''}
-                {...register('fullName')}
-              />
-              {errors.fullName && (
-                <p className='mt-1 text-sm text-red-500'>
-                  {errors.fullName.message}
-                </p>
-              )}
-            </div>
-            <div>
-              <label htmlFor='email-address' className='sr-only'>
-                Email address
-              </label>
-              <Input
-                id='email-address'
-                type='email'
-                autoComplete='email'
-                placeholder='Email address'
-                className={errors.email ? 'border-red-500' : ''}
-                {...register('email')}
-              />
-              {errors.email && (
-                <p className='mt-1 text-sm text-red-500'>
-                  {errors.email.message}
-                </p>
-              )}
-            </div>
-            <div>
-              <label htmlFor='password' className='sr-only'>
-                Password
-              </label>
-              <Input
-                id='password'
-                type='password'
-                autoComplete='new-password'
-                placeholder='Password'
-                className={errors.password ? 'border-red-500' : ''}
-                {...register('password')}
-              />
-              {errors.password && (
-                <p className='mt-1 text-sm text-red-500'>
-                  {errors.password.message}
-                </p>
-              )}
-            </div>
-            <div>
-              <label htmlFor='confirmPassword' className='sr-only'>
-                Confirm Password
-              </label>
-              <Input
-                id='confirmPassword'
-                type='password'
-                autoComplete='new-password'
-                placeholder='Confirm Password'
-                className={errors.confirmPassword ? 'border-red-500' : ''}
-                {...register('confirmPassword')}
-              />
-              {errors.confirmPassword && (
-                <p className='mt-1 text-sm text-red-500'>
-                  {errors.confirmPassword.message}
-                </p>
-              )}
-            </div>
+        {/* Google SSO */}
+        <GoogleSignInButton
+          redirectTo={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard`}
+        />
+
+        {/* Divider */}
+        <div className='my-6'>
+          <FormDivider label='or sign up with email' />
+        </div>
+
+        {/* Form */}
+        <form className='space-y-4' onSubmit={handleSubmit(onSubmit)}>
+          {/* Full name */}
+          <div>
+            <label
+              htmlFor='fullName'
+              className='block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5'>
+              Full name
+            </label>
+            <Input
+              id='fullName'
+              type='text'
+              placeholder='Jane Doe'
+              className={errors.fullName ? 'border-red-400' : ''}
+              {...register('fullName')}
+            />
+            {errors.fullName && (
+              <p className='mt-1 text-xs text-red-500'>
+                {errors.fullName.message}
+              </p>
+            )}
           </div>
 
+          {/* Email */}
+          <div>
+            <label
+              htmlFor='email'
+              className='block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5'>
+              Email address
+            </label>
+            <Input
+              id='email'
+              type='email'
+              autoComplete='email'
+              placeholder='you@example.com'
+              className={errors.email ? 'border-red-400' : ''}
+              {...register('email')}
+            />
+            {errors.email && (
+              <p className='mt-1 text-xs text-red-500'>
+                {errors.email.message}
+              </p>
+            )}
+          </div>
+
+          {/* Password */}
+          <div>
+            <label
+              htmlFor='password'
+              className='block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5'>
+              Password
+            </label>
+            <Input
+              id='password'
+              type='password'
+              autoComplete='new-password'
+              placeholder='••••••••'
+              className={errors.password ? 'border-red-400' : ''}
+              {...register('password')}
+            />
+            {errors.password && (
+              <p className='mt-1 text-xs text-red-500'>
+                {errors.password.message}
+              </p>
+            )}
+          </div>
+
+          {/* Confirm password */}
+          <div>
+            <label
+              htmlFor='confirmPassword'
+              className='block text-sm font-medium text-slate-700 mb-1.5'>
+              Confirm password
+            </label>
+            <Input
+              id='confirmPassword'
+              type='password'
+              autoComplete='new-password'
+              placeholder='••••••••'
+              className={errors.confirmPassword ? 'border-red-400' : ''}
+              {...register('confirmPassword')}
+            />
+            {errors.confirmPassword && (
+              <p className='mt-1 text-xs text-red-500'>
+                {errors.confirmPassword.message}
+              </p>
+            )}
+          </div>
+
+          {/* Error */}
           {error && (
-            <div className='rounded-md bg-red-50 p-4'>
-              <div className='flex'>
-                <div className='ml-3'>
-                  <h3 className='text-sm font-medium text-red-800'>{error}</h3>
-                </div>
-              </div>
+            <div className='rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 px-4 py-3'>
+              <p className='text-sm text-red-700 dark:text-red-400'>{error}</p>
             </div>
           )}
 
-          <div>
-            <Button type='submit' className='w-full' isLoading={isLoading}>
-              Sign up
-            </Button>
-          </div>
-
-          <div className='text-center text-sm'>
-            <span className='text-slate-600'>Already have an account? </span>
-            <Link
-              to='/'
-              className='font-medium text-blue-600 hover:text-blue-500'>
-              Sign in
-            </Link>
-          </div>
+          {/* Submit */}
+          <Button
+            type='submit'
+            className='w-full h-11 text-sm font-semibold'
+            isLoading={isLoading}>
+            Create account
+          </Button>
         </form>
+
+        {/* Sign in CTA */}
+        <p className='mt-6 text-center text-sm text-slate-600 dark:text-slate-400'>
+          Already have an account?{' '}
+          <Link
+            to='/'
+            className='font-semibold text-brand hover:text-brand-dark transition-colors'>
+            Sign in
+          </Link>
+        </p>
       </div>
-    </div>
+    </AuthLayout>
   )
 }

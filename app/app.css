@@ -1,15 +1,50 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+
+/* Tell Tailwind v4 to use .dark class on <html> instead of the OS media query */
+@variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-sans:
+    'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+  /* Brand palette — extracted from Bluecea design */
+  --color-brand: #4c3f8a;
+  --color-brand-dark: #3b3070;
+  --color-brand-light: #6b5db5;
+  --color-brand-bg: #5a4d9c;
+  --color-brand-panel: #443882;
+  --color-brand-muted: #9b8fd9;
+  --color-brand-surface: rgba(255, 255, 255, 0.12);
+
+  /* Semantic aliases */
+  --color-primary: var(--color-brand);
+  --color-primary-hover: var(--color-brand-dark);
+  --color-primary-light: var(--color-brand-light);
 }
 
 html,
 body {
-  @apply bg-white dark:bg-gray-950;
+  @apply bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 
   @media (prefers-color-scheme: dark) {
     color-scheme: dark;
   }
+}
+
+/* Smooth transitions for theme switches */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, color;
+  transition-timing-function: ease;
+  transition-duration: 150ms;
+}
+
+/* Disable transitions on page load to avoid flash */
+.no-transitions * {
+  transition: none !important;
 }

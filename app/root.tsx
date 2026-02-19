@@ -23,14 +23,30 @@ export const links: Route.LinksFunction = () => [
   },
 ]
 
+/**
+ * Inline script that runs before React hydrates to apply the saved theme class.
+ * This prevents the white flash on initial dark-mode page load.
+ */
+const themeInitScript = `
+(function(){
+  try {
+    var t = localStorage.getItem('bluecea-theme') || 'auto';
+    var isDark = t === 'dark' || (t === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (isDark) document.documentElement.classList.add('dark');
+  } catch(e){}
+})();
+`
+
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang='en'>
+    <html lang='en' suppressHydrationWarning>
       <head>
         <meta charSet='utf-8' />
         <meta name='viewport' content='width=device-width, initial-scale=1' />
         <Meta />
         <Links />
+        {/* Must run before any paint — prevents dark-mode flash */}
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body>
         {children}
@@ -44,13 +60,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from './lib/queryClient'
 import { AuthProvider } from './context/AuthContext'
+import { ThemeProvider } from './context/ThemeContext'
 
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Outlet />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <Outlet />
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   )
 }
