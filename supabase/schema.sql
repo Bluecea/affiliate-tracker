@@ -121,9 +121,12 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
--- Note: Trigger must be created on auth.users in Supabase dashboard or via migration if possible
--- CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-
+-- Note: Trigger must be created on auth.users in Supabase dashboard or via migration
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_new_user();
 -- ROW LEVEL SECURITY
 -- ------------------
 
