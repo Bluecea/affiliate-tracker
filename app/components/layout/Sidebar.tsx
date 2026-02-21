@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router'
 import { useAuth } from '../../context/AuthContext'
 import { useQuery } from '@tanstack/react-query'
-import { getAdminPendingCounts } from '../../lib/api'
+import { adminPendingCountsQuery } from '../../api/queries/adminPendingCounts'
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -18,10 +18,8 @@ export function SidebarContent() {
   const location = useLocation()
 
   const { data: pendingCounts } = useQuery({
-    queryKey: ['adminPendingCounts'],
-    queryFn: getAdminPendingCounts,
+    ...adminPendingCountsQuery,
     enabled: role === 'admin',
-    refetchInterval: 60000, // Refresh every minute
   })
 
   const affiliateLinks = [

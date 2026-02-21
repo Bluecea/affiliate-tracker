@@ -7,11 +7,12 @@ import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Modal } from '../../components/ui/modal'
 import {
-  getPaymentMethods,
-  createPaymentMethod,
-  updatePaymentMethod,
-  deletePaymentMethod,
-} from '../../lib/api'
+  paymentMethodsQuery,
+  paymentMethodsKey,
+} from '../../api/queries/paymentMethods'
+import { createPaymentMethodMutation } from '../../api/mutations/createPaymentMethod'
+import { updatePaymentMethodMutation } from '../../api/mutations/updatePaymentMethod'
+import { deletePaymentMethodMutation } from '../../api/mutations/deletePaymentMethod'
 import { CreditCard, Plus, Trash2, Edit2, ShieldAlert } from 'lucide-react'
 import type { PaymentMethod } from '../../types'
 
@@ -21,15 +22,12 @@ export default function AffiliateSettings() {
 
   const queryClient = useQueryClient()
 
-  const { data: paymentMethods = [], isLoading } = useQuery({
-    queryKey: ['paymentMethods'],
-    queryFn: getPaymentMethods,
-  })
+  const { data: paymentMethods = [], isLoading } = useQuery(paymentMethodsQuery)
 
   const deleteMutation = useMutation({
-    mutationFn: deletePaymentMethod,
+    ...deletePaymentMethodMutation,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['paymentMethods'] })
+      queryClient.invalidateQueries({ queryKey: [paymentMethodsKey] })
     },
   })
 
@@ -167,7 +165,7 @@ export default function AffiliateSettings() {
         <PaymentMethodForm
           initialData={editingMethod}
           onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ['paymentMethods'] })
+            queryClient.invalidateQueries({ queryKey: [paymentMethodsKey] })
             setIsModalOpen(false)
           }}
           onCancel={() => setIsModalOpen(false)}
@@ -213,13 +211,12 @@ function PaymentMethodForm({
   })
 
   const createMutation = useMutation({
-    mutationFn: createPaymentMethod,
+    ...createPaymentMethodMutation,
     onSuccess,
   })
 
   const updateMutation = useMutation({
-    mutationFn: (data: Partial<PaymentMethod>) =>
-      updatePaymentMethod(initialData!.id, data),
+    ...updatePaymentMethodMutation,
     onSuccess,
   })
 
@@ -246,7 +243,7 @@ function PaymentMethodForm({
     const payload = { ...data, details: finalDetails }
 
     if (initialData) {
-      updateMutation.mutate(payload)
+      updateMutation.mutate({ id: initialData.id, updates: payload })
     } else {
       createMutation.mutate(payload as any)
     }

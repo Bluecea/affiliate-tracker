@@ -5,7 +5,9 @@ import { Button } from '../../components/ui/button'
 import { Modal } from '../../components/ui/modal'
 import { ProductForm } from '../../components/products/ProductForm'
 import { ProductList } from '../../components/products/ProductList'
-import { getProducts, createProduct, updateProduct } from '../../lib/api'
+import { productsQuery, productsKey } from '../../api/queries/products'
+import { createProductMutation } from '../../api/mutations/createProduct'
+import { updateProductMutation } from '../../api/mutations/updateProduct'
 import type { Product } from '../../types'
 
 export default function AdminProducts() {
@@ -14,26 +16,23 @@ export default function AdminProducts() {
   const queryClient = useQueryClient()
 
   // Fetch Products
-  const { data: products = [], isLoading: isLoadingProducts } = useQuery({
-    queryKey: ['products'],
-    queryFn: getProducts,
-  })
+  const { data: products = [], isLoading: isLoadingProducts } =
+    useQuery(productsQuery)
 
   // Create Mutation
   const createMutation = useMutation({
-    mutationFn: createProduct,
+    ...createProductMutation,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: [productsKey] })
       closeModal()
     },
   })
 
   // Update Mutation
   const updateMutation = useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<Product> }) =>
-      updateProduct(id, updates),
+    ...updateProductMutation,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: [productsKey] })
       closeModal()
     },
   })

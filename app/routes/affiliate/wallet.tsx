@@ -6,28 +6,21 @@ import * as z from 'zod'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Modal } from '../../components/ui/modal'
-import {
-  getWallet,
-  getWithdrawalRequests,
-  requestWithdrawal,
-  getPaymentMethods,
-} from '../../lib/api'
-import { Link, useNavigate } from 'react-router'
+import { walletQuery, walletKey } from '../../api/queries/wallet'
+import { withdrawalsQuery, withdrawalsKey } from '../../api/queries/withdrawals'
+import { paymentMethodsQuery } from '../../api/queries/paymentMethods'
+import { requestWithdrawalMutation } from '../../api/mutations/requestWithdrawal'
+import { useNavigate } from 'react-router'
 import { CreditCard, History, Wallet } from 'lucide-react'
 
 export default function AffiliateWallet() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const queryClient = useQueryClient()
 
-  const { data: wallet, isLoading: isLoadingWallet } = useQuery({
-    queryKey: ['wallet'],
-    queryFn: getWallet,
-  })
+  const { data: wallet, isLoading: isLoadingWallet } = useQuery(walletQuery)
 
-  const { data: withdrawals = [], isLoading: isLoadingHistory } = useQuery({
-    queryKey: ['withdrawals'],
-    queryFn: getWithdrawalRequests,
-  })
+  const { data: withdrawals = [], isLoading: isLoadingHistory } =
+    useQuery(withdrawalsQuery)
 
   const availableBalance = wallet?.available_balance || 0
 
@@ -154,8 +147,8 @@ export default function AffiliateWallet() {
         <WithdrawalForm
           maxAmount={availableBalance}
           onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ['wallet'] })
-            queryClient.invalidateQueries({ queryKey: ['withdrawals'] })
+            queryClient.invalidateQueries({ queryKey: [walletKey] })
+            queryClient.invalidateQueries({ queryKey: [withdrawalsKey] })
             setIsModalOpen(false)
           }}
           onCancel={() => setIsModalOpen(false)}
@@ -206,10 +199,7 @@ function WithdrawalForm({
 }) {
   const navigate = useNavigate()
 
-  const { data: paymentMethods = [], isLoading } = useQuery({
-    queryKey: ['paymentMethods'],
-    queryFn: getPaymentMethods,
-  })
+  const { data: paymentMethods = [], isLoading } = useQuery(paymentMethodsQuery)
 
   // Pre-select default payment method if it exists
   const defaultMethod = paymentMethods.find((m) => m.is_default)
@@ -223,18 +213,7 @@ function WithdrawalForm({
   })
 
   const mutation = useMutation({
-    mutationFn: (data: WithdrawalFormValues) => {
-      const selectedMethod = paymentMethods.find(
-        (m) => m.id === data.payment_method_id,
-      )
-      if (!selectedMethod) throw new Error('Invalid payment method')
-
-      return requestWithdrawal(
-        data.amount,
-        selectedMethod.type,
-        selectedMethod.details,
-      )
-    },
+    ...requestWithdrawalMutation,
     onSuccess,
     onError: (err: any) => {
       alert(err.message || 'An error occurred while requesting withdrawal.')
@@ -246,7 +225,19 @@ function WithdrawalForm({
       alert(`Amount exceeds available balance of $${maxAmount.toFixed(2)}`)
       return
     }
-    mutation.mutate(data)
+    const selectedMethod = paymentMethods.find(
+      (m) => m.id === data.payment_method_id,
+    )
+    if (!selectedMethod) {
+      alert('Invalid payment method')
+      return
+    }
+
+    mutation.mutate({
+      amount: data.amount,
+      method: selectedMethod.type,
+      details: selectedMethod.details,
+    })
   }
 
   if (isLoading) {

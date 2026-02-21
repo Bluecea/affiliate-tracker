@@ -2,11 +2,9 @@ import { useState } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { Check, Copy, Link as LinkIcon } from 'lucide-react'
 import { Button } from '../../components/ui/button'
-import {
-  getAffiliateProducts,
-  getAffiliateLink,
-  generateAffiliateLink,
-} from '../../lib/api'
+import { affiliateProductsQuery } from '../../api/queries/affiliateProducts'
+import { affiliateLinkQuery } from '../../api/queries/affiliateLink'
+import { generateAffiliateLinkMutation } from '../../api/mutations/generateAffiliateLink'
 import type { Product } from '../../types'
 import { useAuth } from '../../context/AuthContext'
 import { Ban } from 'lucide-react'
@@ -14,10 +12,7 @@ import { Ban } from 'lucide-react'
 export default function AffiliateProducts() {
   const { status } = useAuth()
 
-  const { data: products = [], isLoading } = useQuery({
-    queryKey: ['affiliate-products'],
-    queryFn: getAffiliateProducts,
-  })
+  const { data: products = [], isLoading } = useQuery(affiliateProductsQuery)
 
   if (status !== 'active') {
     return (
@@ -78,13 +73,10 @@ function ProductCard({ product }: { product: Product }) {
   const [link, setLink] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
-  const { data: existingLink } = useQuery({
-    queryKey: ['affiliate-link', product.id],
-    queryFn: () => getAffiliateLink(product.id),
-  })
+  const { data: existingLink } = useQuery(affiliateLinkQuery(product.id))
 
   const generateMutation = useMutation({
-    mutationFn: () => generateAffiliateLink(product.id),
+    ...generateAffiliateLinkMutation,
     onSuccess: (data) => {
       setLink(`${window.location.origin}/ref/${data.unique_code}`)
     },
@@ -101,7 +93,7 @@ function ProductCard({ product }: { product: Product }) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } else {
-      generateMutation.mutate()
+      generateMutation.mutate(product.id)
     }
   }
 

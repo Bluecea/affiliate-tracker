@@ -2,23 +2,23 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '../../components/ui/button'
 import { Modal } from '../../components/ui/modal'
-import { getAllWithdrawalRequests, updateWithdrawalStatus } from '../../lib/api'
+import {
+  adminWithdrawalsQuery,
+  adminWithdrawalsKey,
+} from '../../api/queries/adminWithdrawals'
+import { updateWithdrawalStatusMutation } from '../../api/mutations/updateWithdrawalStatus'
 import { Check, X, DollarSign, Eye } from 'lucide-react'
 
 export default function AdminWithdrawals() {
   const queryClient = useQueryClient()
   const [selectedDetails, setSelectedDetails] = useState<any>(null)
 
-  const { data: requests = [], isLoading } = useQuery({
-    queryKey: ['admin-withdrawals'],
-    queryFn: getAllWithdrawalRequests,
-  })
+  const { data: requests = [], isLoading } = useQuery(adminWithdrawalsQuery)
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      updateWithdrawalStatus(id, status),
+    ...updateWithdrawalStatusMutation,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-withdrawals'] })
+      queryClient.invalidateQueries({ queryKey: [adminWithdrawalsKey] })
     },
   })
 

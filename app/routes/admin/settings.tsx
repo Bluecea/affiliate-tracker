@@ -1,24 +1,10 @@
 import { ShieldAlert, User, Mail } from 'lucide-react'
 import { Button } from '../../components/ui/button'
 import { useQuery } from '@tanstack/react-query'
-import { supabase } from '../../lib/supabase'
+import { adminProfileQuery } from '../../api/queries/adminProfile'
 
 export default function AdminSettings() {
-  const { data: profile } = useQuery({
-    queryKey: ['profile'],
-    queryFn: async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) return null
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-      return data
-    },
-  })
+  const { data: profile } = useQuery(adminProfileQuery)
 
   return (
     <div className='space-y-8 animate-in fade-in duration-500'>

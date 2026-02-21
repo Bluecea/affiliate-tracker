@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../context/AuthContext'
-import { getWallet, getStats } from '../../lib/api'
+import { walletQuery } from '../../api/queries/wallet'
+import { statsQuery } from '../../api/queries/stats'
 import {
   DollarSign,
   MousePointer,
@@ -13,15 +14,9 @@ import { Link } from 'react-router'
 export default function DashboardOverview() {
   const { user, status } = useAuth()
 
-  const { data: wallet, isLoading: isLoadingWallet } = useQuery({
-    queryKey: ['wallet'],
-    queryFn: getWallet,
-  })
+  const { data: wallet, isLoading: isLoadingWallet } = useQuery(walletQuery)
 
-  const { data: stats, isLoading: isLoadingStats } = useQuery({
-    queryKey: ['stats'],
-    queryFn: getStats,
-  })
+  const { data: stats, isLoading: isLoadingStats } = useQuery(statsQuery)
 
   const isLoading = isLoadingWallet || isLoadingStats
 

@@ -1,12 +1,11 @@
 import { useState } from 'react'
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-  keepPreviousData,
-} from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '../../components/ui/button'
-import { getAffiliates, updateAffiliateStatus } from '../../lib/api'
+import {
+  adminAffiliatesQuery,
+  adminAffiliatesKey,
+} from '../../api/queries/adminAffiliates'
+import { updateAffiliateStatusMutation } from '../../api/mutations/updateAffiliateStatus'
 import { Check, X, Ban, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Profile } from '../../types'
 
@@ -14,17 +13,12 @@ export default function AdminAffiliates() {
   const [page, setPage] = useState(1)
   const queryClient = useQueryClient()
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin-affiliates', page],
-    queryFn: () => getAffiliates(page, 15),
-    placeholderData: keepPreviousData,
-  })
+  const { data, isLoading } = useQuery(adminAffiliatesQuery(page))
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: Profile['status'] }) =>
-      updateAffiliateStatus(id, status),
+    ...updateAffiliateStatusMutation,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-affiliates'] })
+      queryClient.invalidateQueries({ queryKey: [adminAffiliatesKey] })
     },
   })
 
