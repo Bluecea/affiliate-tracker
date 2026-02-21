@@ -196,6 +196,11 @@ CREATE POLICY "Affiliates can delete own links."
   ON public.affiliate_links FOR DELETE
   USING ( auth.uid() = affiliate_id );
 
+CREATE POLICY "Public can view affiliate links for tracking."
+  ON public.affiliate_links FOR SELECT
+  USING ( true );
+
+
 -- 4. affiliate_clicks
 ALTER TABLE public.affiliate_clicks ENABLE ROW LEVEL SECURITY;
 

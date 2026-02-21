@@ -1,9 +1,28 @@
 import type { Route } from './+types/webhooks.paystack'
 import { supabaseAdmin } from '../../lib/supabase.server'
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
 export async function action({ request }: Route.ActionArgs) {
+  console.log({ request })
+
+  // Handle CORS preflight requests
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders,
+    })
+  }
+
   if (request.method !== 'POST') {
-    return new Response('Method Not Allowed', { status: 405 })
+    return new Response('Method Not Allowed', {
+      status: 405,
+      headers: corsHeaders,
+    })
   }
 
   try {
@@ -25,9 +44,11 @@ export async function action({ request }: Route.ActionArgs) {
       if (!affiliateLinkId) {
         return new Response('Processing complete (No affiliate data)', {
           status: 200,
+          headers: corsHeaders,
         })
       }
 
+      // ... rest of logic
       // 1. Fetch the link and product to get the payout amount
       const { data: link, error: linkError } = await supabaseAdmin
         .from('affiliate_links')
@@ -40,7 +61,10 @@ export async function action({ request }: Route.ActionArgs) {
           'Webhook Error: Invalid affiliate link ID',
           affiliateLinkId,
         )
-        return new Response('Invalid affiliate link', { status: 400 })
+        return new Response('Invalid affiliate link', {
+          status: 400,
+          headers: corsHeaders,
+        })
       }
 
       // Supabase types might infer relation as array or single object
@@ -50,7 +74,6 @@ export async function action({ request }: Route.ActionArgs) {
       const payoutAmount = productData?.payout_per_conversion || 0
 
       // 2. Idempotency Check (Ensure we only reward once per subscriber)
-      // Since it's a subscription, we check if this email already triggered a conversion for this link
       const { data: existingConversions } = await supabaseAdmin
         .from('conversions')
         .select('id')
@@ -58,15 +81,13 @@ export async function action({ request }: Route.ActionArgs) {
         .eq('end_user_identifier', customerEmail)
 
       if (existingConversions && existingConversions.length > 0) {
-        // Subscription already acknowledged, ignore recurring charge for affiliate payout
         return new Response('Conversion already acknowledged for this user', {
           status: 200,
+          headers: corsHeaders,
         })
       }
 
       // 3. Insert the conversion!
-      // Since status is 'approved', the database trigger `trg_update_wallet_conversion`
-      // will automatically run and add the payout_amount to the affiliate's wallet.
       const { error: insertError } = await supabaseAdmin
         .from('conversions')
         .insert([
@@ -81,18 +102,40 @@ export async function action({ request }: Route.ActionArgs) {
 
       if (insertError) {
         console.error('Webhook Error: Failed to insert conversion', insertError)
-        return new Response('Database error', { status: 500 })
+        return new Response('Database error', {
+          status: 500,
+          headers: corsHeaders,
+        })
       }
 
       return new Response('Conversion verified and wallet updated', {
         status: 200,
+        headers: corsHeaders,
       })
     }
 
     // Acknowledge other events without processing
-    return new Response('Event ignored', { status: 200 })
+    return new Response('Event ignored', { status: 200, headers: corsHeaders })
   } catch (err) {
     console.error('Webhook Error:', err)
-    return new Response('Internal Server Error', { status: 500 })
+    return new Response('Internal Server Error', {
+      status: 500,
+      headers: corsHeaders,
+    })
   }
+}
+
+// React Router automatically matches OPTIONS to a loader or action if not handled,
+// but it's best practice to explicitly export a loader for OPTIONS if action strictly filters POST
+export async function loader({ request }: Route.LoaderArgs) {
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders,
+    })
+  }
+  return new Response('Method Not Allowed', {
+    status: 405,
+    headers: corsHeaders,
+  })
 }
