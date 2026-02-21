@@ -14,7 +14,7 @@ CREATE TABLE public.profiles (
 
 -- PRODUCTS
 CREATE TABLE public.products (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   description TEXT,
   url TEXT NOT NULL,
@@ -26,7 +26,7 @@ CREATE TABLE public.products (
 
 -- AFFILIATE LINKS
 CREATE TABLE public.affiliate_links (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   affiliate_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   product_id UUID NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
   unique_code TEXT NOT NULL UNIQUE,
@@ -36,7 +36,7 @@ CREATE TABLE public.affiliate_links (
 
 -- AFFILIATE CLICKS (Raw Analytics)
 CREATE TABLE public.affiliate_clicks (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   affiliate_link_id UUID NOT NULL REFERENCES public.affiliate_links(id) ON DELETE CASCADE,
   ip_address TEXT,
   user_agent TEXT,
@@ -46,7 +46,7 @@ CREATE TABLE public.affiliate_clicks (
 
 -- CONVERSIONS
 CREATE TABLE public.conversions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   affiliate_link_id UUID NOT NULL REFERENCES public.affiliate_links(id) ON DELETE SET NULL,
   product_id UUID NOT NULL REFERENCES public.products(id) ON DELETE SET NULL,
   end_user_identifier TEXT,
@@ -67,7 +67,7 @@ CREATE TABLE public.affiliate_wallets (
 
 -- WITHDRAWAL REQUESTS
 CREATE TABLE public.withdrawal_requests (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   affiliate_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   amount DECIMAL(10, 2) NOT NULL,
   payment_method TEXT NOT NULL,
@@ -79,7 +79,7 @@ CREATE TABLE public.withdrawal_requests (
 
 -- ADMIN NOTIFICATIONS
 CREATE TABLE public.admin_notifications (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   type TEXT NOT NULL,
   message TEXT NOT NULL,
   is_read BOOLEAN DEFAULT FALSE,

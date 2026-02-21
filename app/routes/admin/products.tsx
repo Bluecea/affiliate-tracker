@@ -68,10 +68,10 @@ export default function AdminProducts() {
     <div className='space-y-6'>
       <div className='flex items-center justify-between'>
         <div>
-          <h1 className='text-2xl font-bold tracking-tight text-slate-900'>
+          <h1 className='text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50'>
             Products
           </h1>
-          <p className='text-slate-500'>
+          <p className='text-slate-500 dark:text-slate-400'>
             Manage products available for affiliates.
           </p>
         </div>
